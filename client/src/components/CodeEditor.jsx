@@ -38,7 +38,19 @@ export default function CodeEditor({ value, language, onChange, markers, focus, 
     editorRef.current = editor;
     decoRef.current = editor.createDecorationsCollection();
     const sub = editor.onDidChangeModelContent(() => onChangeRef.current(editor.getValue()));
+
+    // Monaco measures glyph widths once. If JetBrains Mono arrives after the editor
+    // was created, the caret drifts from the text, so re-measure when fonts load.
+    let alive = true;
+    const remeasure = () => alive && monaco.editor.remeasureFonts();
+    const fonts = document.fonts;
+    fonts?.load("13.5px 'JetBrains Mono'").then(remeasure, () => {});
+    fonts?.ready.then(remeasure);
+    fonts?.addEventListener?.('loadingdone', remeasure);
+
     return () => {
+      alive = false;
+      fonts?.removeEventListener?.('loadingdone', remeasure);
       sub.dispose();
       editor.getModel()?.dispose();
       editor.dispose();
