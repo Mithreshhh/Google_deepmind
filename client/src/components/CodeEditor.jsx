@@ -68,8 +68,14 @@ export default function CodeEditor({ value, language, onChange, markers, focus, 
   }, [value]);
 
   useEffect(() => {
-    const model = editorRef.current?.getModel();
-    if (model) monaco.editor.setModelLanguage(model, language);
+    const editor = editorRef.current;
+    const model = editor?.getModel();
+    if (!model) return;
+    if (model.getLanguageId() === language) return;
+    monaco.editor.setModelLanguage(model, language);
+    // A language switch loads a different file, so start at the top.
+    editor.setPosition({ lineNumber: 1, column: 1 });
+    editor.setScrollPosition({ scrollTop: 0, scrollLeft: 0 });
   }, [language]);
 
   // AI findings become inline squiggles with hover messages.

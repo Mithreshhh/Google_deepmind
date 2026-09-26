@@ -7,7 +7,7 @@ const SEV_ORDER = ['critical', 'high', 'medium', 'low'];
 const RULES = [
   {
     key: 'sqli', cat: 'security', severity: 'critical',
-    test: (l) => /\b(SELECT|INSERT|UPDATE|DELETE)\b/i.test(l) && /(['"`]\s*\+\s*\w)|\$\{/.test(l),
+    test: (l) => /\b(SELECT|INSERT|UPDATE|DELETE)\b/i.test(l) && /(['"`]\s*\+\s*\w)|\$\{|\bf["'][^"']*\{|'"\s*$/.test(l),
     title: 'SQL injection in query string',
     description: 'User input is concatenated straight into a SQL statement.',
     suggestion: 'Use a parameterized query with ? placeholders.',

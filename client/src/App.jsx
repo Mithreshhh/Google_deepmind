@@ -5,7 +5,7 @@ import AnalysisPanel from './components/AnalysisPanel.jsx';
 import PipelineLanes from './components/PipelineLanes.jsx';
 import VerificationPanel from './components/VerificationPanel.jsx';
 import ActivityTimeline from './components/ActivityTimeline.jsx';
-import { SAMPLE_CODE, LANGUAGES } from './sample.js';
+import { SAMPLES, LANGUAGES } from './sample.js';
 import { ApiError, analyzeStream, requestFix, fetchHealth } from './api.js';
 import { demoAnalyze, demoFix } from './demo.js';
 
@@ -55,7 +55,7 @@ const cancelRunning = (a) =>
   Object.fromEntries(Object.entries(a).map(([k, v]) => [k, v.state === 'running' || v.state === 'waiting' ? { state: 'idle' } : v]));
 
 export default function App() {
-  const [code, setCode] = useState(SAMPLE_CODE);
+  const [code, setCode] = useState(SAMPLES.javascript);
   const [language, setLanguage] = useState('javascript');
   const [status, setStatus] = useState('watching');
   const [findings, setFindings] = useState(EMPTY);
@@ -87,6 +87,7 @@ export default function App() {
   const burst = useRef(false);
   const pendingFix = useRef(null);
   const snapshot = useRef(null);
+  const drafts = useRef({});
   const statusRef = useRef(status);
   const restoreStatus = useRef('watching');
   const codeRef = useRef(code);
@@ -363,19 +364,36 @@ export default function App() {
     runAnalysis(codeRef.current, language, 'retry');
   };
 
+  // Each language keeps its own draft; the first visit loads that language's sample.
   const changeLanguage = (e) => {
     const next = e.target.value;
+    if (next === language) return;
+    drafts.current[language] = code;
+    const resumed = drafts.current[next] != null;
     changeSource.current = 'language';
-    log(`Language set to ${LANGUAGES.find((l) => l.id === next)?.label}`, 'change');
+    log(`Language set to ${LANGUAGES.find((l) => l.id === next)?.label}${resumed ? '' : ', sample loaded'}`, 'change');
+    // Results for the previous language no longer apply.
+    reqId.current += 1;
+    abortRef.current?.abort();
+    inFlight.current = false;
+    snapshot.current = null;
+    pendingFix.current = null;
+    setFindings(EMPTY);
+    setDismissed([]);
+    setVerification(null);
+    setVerifyError(null);
+    setDeltas(null);
+    setAnalyzers(IDLE);
+    setHasResults(false);
     setLanguage(next);
+    setCode(resumed ? drafts.current[next] : SAMPLES[next]);
   };
 
   const resetSample = () => {
-    if (code === SAMPLE_CODE && language === 'javascript') return;
+    if (code === SAMPLES[language]) return;
     changeSource.current = 'reset';
-    log('Sample code restored', 'change');
-    setLanguage('javascript');
-    setCode(SAMPLE_CODE);
+    log(`${LANGUAGES.find((l) => l.id === language)?.label} sample restored`, 'change');
+    setCode(SAMPLES[language]);
   };
 
   // Only show squiggles for results that match the code currently in the editor.
