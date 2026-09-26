@@ -6,6 +6,21 @@ import express from 'express';
 import { MODEL, AppError, ANALYZER_KEYS, hasApiKey, runAnalyzer, runVerifier, runFix } from './gemini.js';
 
 const app = express();
+
+// Frontend on another domain (e.g. Vercel) calls this API directly.
+// CORS_ORIGIN is a comma-separated allowlist; unset means any origin.
+const allowed = (process.env.CORS_ORIGIN || '').split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (allowed.length === 0 || allowed.includes(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 app.use(express.json({ limit: '1mb' }));
 
 const MAX_CODE = 30000;

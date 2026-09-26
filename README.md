@@ -66,9 +66,27 @@ Open http://localhost:5173.
 | `PORT` | `5000` | backend port (the Vite proxy follows it) |
 | `GEMINI_MODEL` | `gemini-3.8-flash` | override if needed |
 | `GEMINI_THINKING_LEVEL` | `low` | `low` (fastest level gemini-3.8-flash supports), `medium`, `high`, or `off` |
+| `VITE_API_URL` | empty | frontend only: backend origin when hosted separately |
+| `CORS_ORIGIN` | any origin | backend only: comma-separated list of allowed frontend origins |
 | `VITE_DEMO_MODE` | off | `true` enables a local fallback when Gemini is unreachable. The UI shows a DEMO MODE badge whenever fallback data is on screen. |
 
 After editing `.env`, restart `npm run dev`.
+
+## Deploy (Render backend + Vercel frontend)
+
+**Render** (New → Web Service → this repo)
+- Root Directory: `server`
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Environment: `GEMINI_API_KEY`, and `CORS_ORIGIN=https://<your-app>.vercel.app` once you know the Vercel URL
+- Health check path: `/api/health`
+
+**Vercel** (Add New → Project → this repo)
+- Root Directory: `client` (framework preset: Vite)
+- Environment: `VITE_API_URL=https://<your-service>.onrender.com`
+- Redeploy after changing `VITE_API_URL`, since it is baked in at build time.
+
+Render's free tier sleeps after 15 minutes idle and takes about a minute to wake. Open `https://<your-service>.onrender.com/api/health` before a demo.
 
 ## Project layout
 

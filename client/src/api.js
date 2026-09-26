@@ -1,3 +1,6 @@
+// Empty in dev (Vite proxies /api). In production set VITE_API_URL to the backend origin.
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 export class ApiError extends Error {
   constructor(message, code, status) {
     super(message);
@@ -34,7 +37,7 @@ async function post(url, body, signal) {
 
 /** Streams NDJSON stage events from /api/analyze. */
 export async function analyzeStream({ code, language, signal, onEvent }) {
-  const res = await post('/api/analyze', { code, language, stream: true }, signal);
+  const res = await post(`${API_BASE}/api/analyze`, { code, language, stream: true }, signal);
   if (!res.ok) throw await toApiError(res);
 
   const reader = res.body.getReader();
@@ -65,7 +68,7 @@ export async function analyzeStream({ code, language, signal, onEvent }) {
 }
 
 export async function requestFix({ code, language, issue }) {
-  const res = await post('/api/fix', { code, language, issue });
+  const res = await post(`${API_BASE}/api/fix`, { code, language, issue });
   if (!res.ok) throw await toApiError(res);
   const data = await res.json();
   if (!data.fixedCode) throw new ApiError('Gemini returned an empty fix.', 'EMPTY_FIX');
@@ -74,7 +77,7 @@ export async function requestFix({ code, language, issue }) {
 
 export async function fetchHealth() {
   try {
-    const res = await fetch('/api/health');
+    const res = await fetch(`${API_BASE}/api/health`);
     if (!res.ok) return null;
     return await res.json();
   } catch {
